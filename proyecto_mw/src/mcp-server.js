@@ -6,365 +6,160 @@ import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Configuración de la base de datos MCP (usuario de solo lectura)
+// Configuración de la base de datos MCP
 const DB_CONFIG = {
-    host: process.env.DB_HOST,
+    host: process.env.DB_HOST || 'localhost',
     user: 'mcp_agent',
     password: 'Agent_Secret_Pass_123!',
-    database: process.env.DB_NAME
+    database: process.env.DB_NAME || 'emprendimientos'
 };
 
 const server = new Server({
     name: "Emprendimientos MCP Server",
-    version: "2.0.0",
-    description: "Servidor MCP completo para gestión de emprendimientos",
+    version: "1.0.0",
+    description: "Servidor MCP para consultas de emprendimientos",
 },
-    { capabilities: { tools: {} } }
-);
+    { capabilities: { tools: {} } })
 
-// Definir TODAS las herramientas disponibles
+// Definir lo que la IA puede hacer (funcionalidades)
 server.setRequestHandler(ListToolsRequestSchema, async (request) => {
     return {
         tools: [
-            // USUARIOS
             {
-                name: "get_usuarios",
-                description: "Obtener lista de todos los usuarios",
-                inputSchema: {
-                    type: "object",
-                    properties: {},
-                    required: []
-                }
-            },
-            {
-                name: "get_usuario_by_id",
-                description: "Obtener un usuario específico por ID",
+                name: "db_readonly",
+                description: "Consulta segura de información de emprendimientos. Permite obtener usuarios, emprendimientos, categorías y roles",
                 inputSchema: {
                     type: "object",
                     properties: {
-                        id: { type: "integer", description: "ID del usuario" }
+                        query_type: {
+                            type: "string",
+                            enum: ["get_usuarios", "get_emprendimientos", "get_categorias", "get_roles"],
+                            description: "Tipo de consulta: 'get_usuarios', 'get_emprendimientos', 'get_categorias', 'get_roles'"
+                        },
+                        id: {
+                            type: "integer",
+                            description: "ID opcional para filtrar un registro específico"
+                        }
                     },
-                    required: ["id"]
-                }
-            },
-            // EMPRENDIMIENTOS
-            {
-                name: "get_emprendimientos",
-                description: "Obtener lista de emprendimientos",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        usuario_id: { type: "integer", description: "Filtrar por ID de usuario (opcional)" }
-                    }
-                }
-            },
-            {
-                name: "get_emprendimiento_by_id",
-                description: "Obtener un emprendimiento específico por ID",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        id: { type: "integer", description: "ID del emprendimiento" }
-                    },
-                    required: ["id"]
-                }
-            },
-            // CATEGORÍAS
-            {
-                name: "get_categorias",
-                description: "Obtener lista de todas las categorías",
-                inputSchema: {
-                    type: "object",
-                    properties: {},
-                    required: []
-                }
-            },
-            // ROLES
-            {
-                name: "get_roles",
-                description: "Obtener lista de todos los roles",
-                inputSchema: {
-                    type: "object",
-                    properties: {},
-                    required: []
-                }
-            },
-            // MENTORÍAS
-            {
-                name: "get_mentorias",
-                description: "Obtener lista de mentorías",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        tutor_id: { type: "integer", description: "Filtrar por ID de tutor (opcional)" },
-                        emprendimiento_id: { type: "integer", description: "Filtrar por ID de emprendimiento (opcional)" }
-                    }
-                }
-            },
-            // RESEÑAS
-            {
-                name: "get_resenas",
-                description: "Obtener lista de reseñas",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        emprendimiento_id: { type: "integer", description: "Filtrar por ID de emprendimiento (opcional)" }
-                    }
-                }
-            },
-            // TUTORES
-            {
-                name: "get_tutores",
-                description: "Obtener lista de tutores (usuarios con rol MENTOR)",
-                inputSchema: {
-                    type: "object",
-                    properties: {},
-                    required: []
-                }
-            },
-            // COLABORADORES
-            {
-                name: "get_colaboradores",
-                description: "Obtener lista de colaboradores",
-                inputSchema: {
-                    type: "object",
-                    properties: {},
-                    required: []
-                }
-            },
-            // ESTADÍSTICAS
-            {
-                name: "get_estadisticas_usuario",
-                description: "Obtener estadísticas de un usuario (emprendimientos, mentorías, reseñas)",
-                inputSchema: {
-                    type: "object",
-                    properties: {
-                        usuario_id: { type: "integer", description: "ID del usuario" }
-                    },
-                    required: ["usuario_id"]
-                }
-            },
-            {
-                name: "get_estadisticas_generales",
-                description: "Obtener estadísticas generales del sistema",
-                inputSchema: {
-                    type: "object",
-                    properties: {},
-                    required: []
+                    required: ["query_type"]
                 }
             }
         ]
-    };
-});
+    }
+})
 
-// Ejecutar las herramientas
+
+//Ejecutar las herramientas
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const connection = await mysql.createConnection(DB_CONFIG);
+    if (request.params.name !== 'db_readonly') throw new Error("Tool not found");
+
+    // Validación Estricta - Crear la regla de validación
+    const inputSchema = z.object({
+        query_type: z.enum(["get_usuarios", "get_emprendimientos", "get_categorias", "get_roles"]),
+        id: z.number().int().positive().optional()
+    })
 
     try {
-        let result;
+        // Validación Estricta - Validar la entrada
+        const { query_type, id } = inputSchema.parse(request.params.arguments);
 
-        switch (request.params.name) {
-            // ========== USUARIOS ==========
-            case "get_usuarios": {
-                const [rows] = await connection.execute(
-                    `SELECT * FROM usuarios_view ORDER BY fechaRegistro DESC`
-                );
-                result = rows;
-                break;
-            }
+        const connection = await mysql.createConnection(DB_CONFIG);
 
-            case "get_usuario_by_id": {
-                const schema = z.object({ id: z.number().int().positive() });
-                const { id } = schema.parse(request.params.arguments);
-
-                const [rows] = await connection.execute(
-                    `SELECT * FROM usuarios_view WHERE id = ?`,
-                    [id]
-                );
-                result = rows[0] || null;
-                break;
-            }
-
-            // ========== EMPRENDIMIENTOS ==========
-            case "get_emprendimientos": {
-                const schema = z.object({ usuario_id: z.number().int().positive().optional() });
-                const args = schema.parse(request.params.arguments || {});
-
-                let query = `SELECT * FROM emprendimientos_view`;
-                const params = [];
-
-                if (args.usuario_id) {
-                    query += ` WHERE usuarioId = ?`;
-                    params.push(args.usuario_id);
+        try {
+            let result;
+            
+            if (query_type === "get_usuarios") {
+                if (id) {
+                    const [rows] = await connection.execute(
+                        "SELECT * FROM usuarios_view WHERE id = ?",
+                        [id]
+                    );
+                    result = rows[0] || null;
+                } else {
+                    const [rows] = await connection.execute(
+                        "SELECT * FROM usuarios_view ORDER BY fechaRegistro DESC"
+                    );
+                    result = rows;
                 }
-
-                query += ` ORDER BY fechaCreacion DESC LIMIT 50`;
-
-                const [rows] = await connection.execute(query, params);
-                result = rows;
-                break;
-            }
-
-            case "get_emprendimiento_by_id": {
-                const schema = z.object({ id: z.number().int().positive() });
-                const { id } = schema.parse(request.params.arguments);
-
-                const [rows] = await connection.execute(
-                    `SELECT * FROM emprendimientos_view WHERE id = ?`,
-                    [id]
-                );
-                result = rows[0] || null;
-                break;
-            }
-
-            // ========== CATEGORÍAS ==========
-            case "get_categorias": {
-                const [rows] = await connection.execute(
-                    `SELECT * FROM categorias_view ORDER BY nombre`
-                );
-                result = rows;
-                break;
-            }
-
-            // ========== ROLES ==========
-            case "get_roles": {
-                const [rows] = await connection.execute(
-                    `SELECT * FROM roles_view ORDER BY nombre`
-                );
-                result = rows;
-                break;
-            }
-
-            // ========== MENTORÍAS ==========
-            case "get_mentorias": {
-                const schema = z.object({
-                    tutor_id: z.number().int().positive().optional(),
-                    emprendimiento_id: z.number().int().positive().optional()
-                });
-                const args = schema.parse(request.params.arguments || {});
-
-                let query = `SELECT * FROM mentorias_view WHERE 1=1`;
-                const params = [];
-
-                if (args.tutor_id) {
-                    query += ` AND tutorId = ?`;
-                    params.push(args.tutor_id);
+            } else if (query_type === "get_emprendimientos") {
+                if (id) {
+                    const [rows] = await connection.execute(
+                        "SELECT * FROM emprendimientos_view WHERE id = ?",
+                        [id]
+                    );
+                    result = rows[0] || null;
+                } else {
+                    const [rows] = await connection.execute(
+                        "SELECT * FROM emprendimientos_view ORDER BY fechaCreacion DESC LIMIT 50"
+                    );
+                    result = rows;
                 }
-                if (args.emprendimiento_id) {
-                    query += ` AND emprendimientoId = ?`;
-                    params.push(args.emprendimiento_id);
+            } else if (query_type === "get_categorias") {
+                if (id) {
+                    // Consultar tabla base con agregación manual
+                    const [rows] = await connection.execute(
+                        `SELECT c.id, c.nombre, c.descripcion, 
+                                COUNT(e.id) AS total_emprendimientos
+                         FROM categorias c
+                         LEFT JOIN emprendimientos e ON c.id = e.categoriaId
+                         WHERE c.id = ?
+                         GROUP BY c.id, c.nombre, c.descripcion`,
+                        [id]
+                    );
+                    result = rows[0] || null;
+                } else {
+                    const [rows] = await connection.execute(
+                        "SELECT * FROM categorias_view ORDER BY nombre"
+                    );
+                    result = rows;
                 }
-
-                query += ` ORDER BY fechaProgramada DESC LIMIT 50`;
-
-                const [rows] = await connection.execute(query, params);
-                result = rows;
-                break;
-            }
-
-            // ========== RESEÑAS ==========
-            case "get_resenas": {
-                const schema = z.object({ emprendimiento_id: z.number().int().positive().optional() });
-                const args = schema.parse(request.params.arguments || {});
-
-                let query = `SELECT * FROM resenas_view`;
-                const params = [];
-
-                if (args.emprendimiento_id) {
-                    query += ` WHERE emprendimientoId = ?`;
-                    params.push(args.emprendimiento_id);
+            } else if (query_type === "get_roles") {
+                if (id) {
+                    // Consultar tabla base con agregación manual
+                    const [rows] = await connection.execute(
+                        `SELECT r.id, r.nombre,
+                                COUNT(ru.B) AS total_usuarios
+                         FROM roles r
+                         LEFT JOIN _RolToUsuario ru ON r.id = ru.A
+                         WHERE r.id = ?
+                         GROUP BY r.id, r.nombre`,
+                        [id]
+                    );
+                    result = rows[0] || null;
+                } else {
+                    const [rows] = await connection.execute(
+                        "SELECT * FROM roles_view ORDER BY nombre"
+                    );
+                    result = rows;
                 }
-
-                query += ` ORDER BY fecha DESC LIMIT 50`;
-
-                const [rows] = await connection.execute(query, params);
-                result = rows;
-                break;
             }
 
-            // ========== TUTORES ==========
-            case "get_tutores": {
-                const [rows] = await connection.execute(
-                    `SELECT * FROM tutores_view ORDER BY nombre`
-                );
-                result = rows;
-                break;
+            return {
+                content: [{
+                    type: "text",
+                    text: JSON.stringify(result, null, 2)
+                }
+                ]
             }
-
-            // ========== COLABORADORES ==========
-            case "get_colaboradores": {
-                const [rows] = await connection.execute(
-                    `SELECT * FROM colaboradores_view ORDER BY nombre`
-                );
-                result = rows;
-                break;
-            }
-
-            // ========== ESTADÍSTICAS ==========
-            case "get_estadisticas_usuario": {
-                const schema = z.object({ usuario_id: z.number().int().positive() });
-                const { usuario_id } = schema.parse(request.params.arguments);
-
-                const [rows] = await connection.execute(
-                    `SELECT 
-                        (SELECT COUNT(*) FROM emprendimientos WHERE usuarioId = ?) as total_emprendimientos,
-                        (SELECT COUNT(*) FROM mentorias m 
-                         JOIN emprendimientos e ON m.emprendimientoId = e.id 
-                         WHERE e.usuarioId = ?) as total_mentorias_recibidas,
-                        (SELECT COUNT(*) FROM resenas WHERE usuarioId = ?) as total_resenas_dadas,
-                        (SELECT AVG(r.calificacion) FROM resenas r
-                         JOIN emprendimientos e ON r.emprendimientoId = e.id
-                         WHERE e.usuarioId = ?) as calificacion_promedio
-                    `,
-                    [usuario_id, usuario_id, usuario_id, usuario_id]
-                );
-                result = rows[0];
-                break;
-            }
-
-            case "get_estadisticas_generales": {
-                const [rows] = await connection.execute(
-                    `SELECT 
-                        (SELECT COUNT(*) FROM usuarios) as total_usuarios,
-                        (SELECT COUNT(*) FROM emprendimientos) as total_emprendimientos,
-                        (SELECT COUNT(*) FROM mentorias) as total_mentorias,
-                        (SELECT COUNT(*) FROM resenas) as total_resenas,
-                        (SELECT COUNT(*) FROM categorias) as total_categorias,
-                        (SELECT AVG(calificacion) FROM resenas) as calificacion_promedio_general
-                    `
-                );
-                result = rows[0];
-                break;
-            }
-
-            default:
-                throw new Error(`Herramienta no encontrada: ${request.params.name}`);
+        } finally {
+            connection.end();
         }
-
-        return {
-            content: [{
-                type: "text",
-                text: JSON.stringify(result, null, 2)
-            }]
-        };
     } catch (error) {
         return {
             content: [{
                 type: "text",
-                text: `Error: ${error.message}`,
+                text: "Error al ejecutar la herramienta: " + error.message,
                 isError: true
-            }]
-        };
-    } finally {
-        await connection.end();
+            }
+            ]
+        }
     }
-});
+})
 
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.log("🤖 MCP Server v2.0 started - Emprendimientos Full Access");
+    console.error("Emprendimientos MCP Server started");
 }
 
 main().catch(console.error);
