@@ -1,14 +1,14 @@
-# ⚡ SOLUCIÓN RÁPIDA - Permisos en Tablas Base
+# SOLUCIÓN RÁPIDA - Permisos en Tablas Base
 
-## 🚨 Error Actual:
+## Error Actual:
 ```
 "Error al ejecutar la herramienta: SELECT command denied to user 'mcp_agent'@'localhost' for table 'categorias'"
 ```
 
-## 🔧 Causa:
+## Causa:
 El usuario `mcp_agent` solo tiene permisos en las **vistas**, pero cuando filtras por ID, el servidor consulta las **tablas base** directamente.
 
-## ✅ SOLUCIÓN (30 segundos):
+## SOLUCIÓN (30 segundos):
 
 ### Opción 1: Ejecutar Script Rápido
 
@@ -44,7 +44,7 @@ Si prefieres, ejecuta de nuevo `database/data.sql` completo (ya está actualizad
 
 ---
 
-## 🎯 Después de ejecutar:
+## Después de ejecutar:
 
 1. **Reinicia MCP Inspector**
 2. **Prueba de nuevo:**
@@ -63,13 +63,13 @@ Si prefieres, ejecuta de nuevo `database/data.sql` completo (ya está actualizad
 }
 ```
 
-## ✅ Ahora debería funcionar!
+## Ahora debería funcionar!
 
 Los permisos adicionales permiten que `mcp_agent` consulte las tablas base cuando filtras por ID.
 
 ---
 
-## 📝 Resumen de Permisos:
+## Resumen de Permisos:
 
 **Vistas (para listar todos):**
 - usuarios_view
@@ -87,4 +87,4 @@ Los permisos adicionales permiten que `mcp_agent` consulte las tablas base cuand
 - emprendimientos
 - _RolToUsuario
 
-¡Listo! 🚀
+¡Listo!

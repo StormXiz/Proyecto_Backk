@@ -1,11 +1,11 @@
-# 🚨 SOLUCIÓN AL ERROR - Access Denied
+# SOLUCIÓN AL ERROR - Access Denied
 
-## ❌ Error Actual:
+## Error Actual:
 ```
 "Error al ejecutar la herramienta: Access denied for user 'mcp_agent'@'%' to database 'emprendimientos'"
 ```
 
-## ✅ SOLUCIÓN (2 pasos):
+## SOLUCIÓN (2 pasos):
 
 ### Paso 1: Ejecutar el Script SQL
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 🎯 Nueva Funcionalidad: Búsqueda por ID
+## Nueva Funcionalidad: Búsqueda por ID
 
 Ahora puedes buscar registros específicos por ID:
 
@@ -72,7 +72,7 @@ Ahora puedes buscar registros específicos por ID:
 
 ---
 
-## ✅ Verificación
+## Verificación
 
 Después de ejecutar el script SQL, verifica:
 
@@ -90,11 +90,11 @@ Deberías ver:
 
 ---
 
-## 🎯 Resumen de Cambios
+## Resumen de Cambios
 
-1. ✅ Agregado parámetro opcional `id` a todas las consultas
-2. ✅ Ahora puedes obtener todos los registros O uno específico por ID
-3. ✅ Si no pasas `id`, obtienes todos los registros
-4. ✅ Si pasas `id`, obtienes solo ese registro (o `null` si no existe)
+1. Agregado parámetro opcional `id` a todas las consultas
+2. Ahora puedes obtener todos los registros O uno específico por ID
+3. Si no pasas `id`, obtienes todos los registros
+4. Si pasas `id`, obtienes solo ese registro (o `null` si no existe)
 
 **IMPORTANTE**: El error desaparecerá solo después de ejecutar `database/data.sql` en MySQL Workbench.

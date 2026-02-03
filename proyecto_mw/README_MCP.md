@@ -1,10 +1,10 @@
-# 🚀 Guía Rápida - MCP Server Emprendimientos
+# Guía Rápida - MCP Server Emprendimientos
 
-## ✅ Configuración Completada
+## Configuración Completada
 
 El MCP server está configurado para consultar las vistas de la base de datos `emprendimientos`.
 
-## 📋 Paso 1: Ejecutar el Script SQL
+## Paso 1: Ejecutar el Script SQL
 
 Abre MySQL Workbench y ejecuta el archivo:
 ```
@@ -12,12 +12,12 @@ database/data.sql
 ```
 
 Este script creará:
-- ✅ Usuario `mcp_agent` con permisos de solo lectura
-- ✅ 8 vistas seguras (usuarios_view, emprendimientos_view, etc.)
-- ✅ Triggers de auditoría para emprendimientos, mentorías y reseñas
-- ✅ Tabla `audit_logs` para registro de cambios
+- Usuario `mcp_agent` con permisos de solo lectura
+- 8 vistas seguras (usuarios_view, emprendimientos_view, etc.)
+- Triggers de auditoría para emprendimientos, mentorías y reseñas
+- Tabla `audit_logs` para registro de cambios
 
-## 🔧 Paso 2: Iniciar el MCP Server
+## Paso 2: Iniciar el MCP Server
 
 ```bash
 npm run mcp
@@ -28,14 +28,14 @@ Deberías ver:
 Emprendimientos MCP Server started
 ```
 
-## 🛠️ Paso 3: Configurar MCP Inspector
+## Paso 3: Configurar MCP Inspector
 
 1. **Transport Type**: STDIO
 2. **Command**: `node`
 3. **Arguments**: `src/mcp-server.js`
 4. **Working Directory**: Ruta completa al proyecto
 
-## 📚 Herramientas Disponibles
+## Herramientas Disponibles
 
 ### `db_readonly`
 
@@ -71,7 +71,7 @@ Consulta segura de información de emprendimientos.
    }
    ```
 
-## ✅ Verificación
+## Verificación
 
 Para verificar que todo funciona:
 
@@ -88,14 +88,14 @@ Para verificar que todo funciona:
 5. Conecta desde MCP Inspector
 6. Prueba la herramienta `db_readonly` con `query_type: "get_usuarios"`
 
-## 🎯 Características
+## Características
 
-- ✅ **Solo lectura**: El usuario mcp_agent solo puede hacer SELECT
-- ✅ **Vistas seguras**: Acceso controlado a través de vistas
-- ✅ **Auditoría**: Todos los cambios en emprendimientos, mentorías y reseñas se registran
-- ✅ **Validación estricta**: Usa Zod para validar entradas
+- **Solo lectura**: El usuario mcp_agent solo puede hacer SELECT
+- **Vistas seguras**: Acceso controlado a través de vistas
+- **Auditoría**: Todos los cambios en emprendimientos, mentorías y reseñas se registran
+- **Validación estricta**: Usa Zod para validar entradas
 
-## 📝 Notas
+## Notas
 
 - El servidor usa las **vistas** definidas en `data.sql`, no las tablas directas
 - Todos los cambios en emprendimientos, mentorías y reseñas se registran en `audit_logs`

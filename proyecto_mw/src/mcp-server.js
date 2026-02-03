@@ -3,15 +3,13 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import mysql from "mysql2/promise";
-import dotenv from "dotenv";
-dotenv.config();
 
 // Configuración de la base de datos MCP
 const DB_CONFIG = {
-    host: process.env.DB_HOST || 'localhost',
+    host: 'localhost',
     user: 'mcp_agent',
     password: 'Agent_Secret_Pass_123!',
-    database: process.env.DB_NAME || 'emprendimientos'
+    database: 'emprendimientos'
 };
 
 const server = new Server({
@@ -159,7 +157,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Emprendimientos MCP Server started");
+    // Server started - no console output to avoid polluting stdout
 }
 
 main().catch(console.error);
